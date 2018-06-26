@@ -1,0 +1,36 @@
+vrrp_instance VI_1 {
+    interface                  enp0s8
+    {% if ansible_nodename == "nginx-01" -%}
+    priority                   101
+    {% endif -%}
+
+    {% if ansible_nodename == "nginx-02" -%}
+    priority                   50
+    {% endif -%}
+
+    virtual_router_id          51
+    advert_int                 1
+    accept
+    garp_master_refresh        5
+    garp_master_refresh_repeat 1
+    {% if ansible_nodename == "nginx-01" -%}
+    unicast_src_ip             192.168.33.21
+    {% endif -%}
+    
+    {% if ansible_nodename == "nginx-02" -%}
+    unicast_src_ip             192.168.33.22
+    {% endif %}
+
+    unicast_peer {
+    {% if ansible_nodename == "nginx-01" -%}
+    192.168.33.22
+    {% endif -%}
+    {% if ansible_nodename == "nginx-02" -%}
+    192.168.33.21
+    {% endif -%}
+    }
+
+    virtual_ipaddress {
+    192.168.33.5
+    }
+}

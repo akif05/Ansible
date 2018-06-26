@@ -1,0 +1,189 @@
+tree
+├── nginx_lb
+│   ├── ansible.cfg
+│   ├── group_vars
+│   │   └── all.yml
+│   ├── inventory.yml
+│   ├── roles
+│   │   ├── common
+│   │   │   └── tasks
+│   │   │       └── main.yml
+│   │   ├── nginx-lb
+│   │   │   ├── handlers
+│   │   │   │   └── main.yml
+│   │   │   ├── tasks
+│   │   │   │   └── main.yml
+│   │   │   └── templates
+│   │   │       ├── keepalived.j2
+│   │   │       └── test_proxy.j2
+│   │   └── webservers
+│   │       ├── tasks
+│   │       │   └── main.yml
+│   │       └── templates
+│   │           └── index.j2
+│   ├── site.retry
+│   └── site.yml
+└── README
+
+12 directories, 13 files
+
+echo " " README && cat nginx_lb/ansible.cfg >> README 
+[defaults]
+inventory = ./inventory.yml
+host_key_checking = false
+
+ 
+echo " " >> README && cat nginx_lb/group_vars/all.yml >> README 
+---
+ansible_user: vagrant
+ansible_password: vagrant
+ansible_become: yes 
+ 
+
+echo " " >> README && cat nginx_lb/inventory.yml >> README 
+[nginx-lb]
+192.168.33.21
+192.168.33.22
+
+[webservers]
+192.168.33.31
+192.168.33.32
+192.168.33.33
+
+ 
+echo " " >> README && cat nginx_lb/roles/common/tasks/main.yml >> README 
+---
+- name: Insall nginx
+  apt:
+    name: nginx
+    state: present
+
+- name: Enforce nginx enabled and runnung
+  service:
+    name: nginx
+    enabled: yes
+    state: started
+
+ 
+
+echo " " >> README && cat nginx_lb/roles/nginx-lb/handlers/main.yml >> README 
+- name: reload nginx
+  service: 
+    name: nginx
+    status: started
+
+
+ 
+echo " " >> README && cat nginx_lb/roles/nginx-lb/tasks/main.yml >> README 
+---
+
+- name: Installing Keepalived
+  apt: 
+    name: keepalived
+    state: present
+
+- name: Ensure keepalived is running
+  service: 
+    name: keepalived
+    state: started 
+    enabled: yes
+
+- name: Deploy keepalived configuration file
+  template:
+    src: keepalived.j2
+    dest: /etc/keepalived/keepalived.conf
+
+- name: Deploy test_proxy.conf file on Lb cluster
+  template:
+    src: test_proxy.j2
+    dest: /etc/nginx/sites-enabled/test_proxy.conf
+  notify: reload nginx
+
+ 
+echo " " >> README && cat nginx_lb/roles/nginx-lb/templates/keepalived.j2 >> README 
+vrrp_instance VI_1 {
+    interface                  enp0s8
+    {% if ansible_nodename == "nginx-01" -%}
+    priority                   101
+    {% endif -%}
+
+    {% if ansible_nodename == "nginx-02" -%}
+    priority                   50
+    {% endif -%}
+
+    virtual_router_id          51
+    advert_int                 1
+    accept
+    garp_master_refresh        5
+    garp_master_refresh_repeat 1
+    {% if ansible_nodename == "nginx-01" -%}
+    unicast_src_ip             192.168.33.21
+    {% endif -%}
+    
+    {% if ansible_nodename == "nginx-02" -%}
+    unicast_src_ip             192.168.33.22
+    {% endif %}
+
+    unicast_peer {
+    {% if ansible_nodename == "nginx-01" -%}
+    192.168.33.22
+    {% endif -%}
+    {% if ansible_nodename == "nginx-02" -%}
+    192.168.33.21
+    {% endif -%}
+    }
+
+    virtual_ipaddress {
+    192.168.33.5
+    }
+}
+
+ 
+echo " " >> README && cat nginx_lb/roles/nginx-lb/templates/test_proxy.j2 >> README 
+upstream backend_test_web {
+  server 192.168.22.31;
+  server 192.168.22.32;
+  server 192.168.22.33;
+}
+
+server {
+   listen          8080;
+   location / {
+       proxy_pass http://backend_test_web;
+       proxy_set_header Host $host:$server_port;
+       proxy_set_header X-Real-IP  $remote_addr;
+       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+   }
+
+}
+ 
+echo " " >> README && cat nginx_lb/roles/webservers/tasks/main.yml >> README 
+---
+- name: Deploy index template
+  template:
+    src: index.j2
+    dest: /var/www/html/index.html
+ 
+echo " " >> README && cat nginx_lb/roles/webservers/templates/index.j2 >> README 
+<html>
+    <h1> Hi Ak. Hello from {{ ansible_fqdn }} server. </h1>
+
+</html>
+ 
+echo " " >> README && cat nginx_lb/site.yml >> README 
+---
+- name: Deploy nginx on all nodes
+  hosts: all
+  roles:
+    - common
+
+- name: Deploy web servers
+  hosts: webservers
+  roles:
+    - webservers
+
+- name: Deploy keepalived
+  hosts: nginx-lb
+  roles:
+  - nginx-lb
+    
