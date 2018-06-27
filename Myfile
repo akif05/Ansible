@@ -1,0 +1,215 @@
+
+file: /home/vagrant/ansible/nginx_lb/ansible.cfg
+
+[defaults]
+inventory = ./inventory.yml
+host_key_checking = false
+
+
+file: /home/vagrant/ansible/nginx_lb/inventory.yml
+
+
+[nginx-lb]
+192.168.33.21
+192.168.33.22
+
+[webservers]
+192.168.33.31
+192.168.33.32
+192.168.33.33
+
+
+file: /home/vagrant/ansible/nginx_lb/site.retry
+
+192.168.33.21
+192.168.33.22
+192.168.33.31
+192.168.33.32
+192.168.33.33
+
+file: /home/vagrant/ansible/nginx_lb/site.yml
+
+---
+- name: Deploy nginx on all nodes
+  hosts: all
+  roles:
+    - common
+
+- name: Deploy web servers
+  hosts: webservers
+  roles:
+    - webservers
+
+- name: Deploy keepalived
+  hosts: nginx-lb
+  roles:
+  - nginx-lb
+    
+
+file: /home/vagrant/ansible/nginx_lb/group_vars/all.yml
+
+---
+ansible_user: vagrant
+ansible_password: vagrant
+ansible_become: yes 
+
+file: /home/vagrant/ansible/nginx_lb/roles/common/tasks/main.yml
+
+---
+- name: Insalling nginx
+  apt:
+    name: nginx
+    state: present
+
+- name: Enforce nginx enabled and runnung
+  service:
+    name: nginx
+    enabled: yes
+    state: started
+
+- name: Installing sshpass
+  apt: 
+    name: sshpass
+    state: present
+
+- name: Installing Puppet and Ntp on Ubungu systems
+  apt: 
+    name: 
+    - puppet
+    - ntp
+    state: present 
+  when: ansible_os_family == "Debian"
+
+- name: Deploy Motd to all systems
+  template:
+    src: motd.j2
+    dest: /etc/motd
+
+file: /home/vagrant/ansible/nginx_lb/roles/common/templates/motd.j2
+
++-------------------- W A R N I N G -----------------------+
+|                                                          |
+|      THIS SYSTEM IS RESTRICTED TO AUTHORIZED USERS       |
+|                 FOR AUTHORIZED USE ONLY.                 |
++----------------------------------------------------------+
+| UNAUTHORIZED ACCESS IS STRICTLY PROHIBITED AND MAY BE    |
+| PUNISHABLE UNDER THE COMPUTER MISUSE ACT 1990 OR OTHER   |
+| APPLICABLE LAWS.                                         |
+| IF NOT AUTHORIZED TO ACCESS THIS SYSTEM, DISCONNECT NOW. |
+| BY CONTINUING, YOU CONSENT TO YOUR KEYSTROKES AND DATA   |
+| CONTENT BEING MONITORED. ALL PERSONS ARE HEREBY          |
+| NOTIFIED THAT THE USE OF THIS SYSTEM CONSTITUTES CONSENT |
+| MONITORING AND AUDITING.                                 |
++----------------------------------------------------------+
+Linux {{ facter_lsbdistdescription }}
+Linux {{ facter_ipaddress_enp0s8 }}
+
+
+
+file: /home/vagrant/ansible/nginx_lb/roles/nginx-lb/handlers/main.yml
+
+
+- name: reload nginx
+  service: 
+    name: nginx
+    status: started
+
+file: /home/vagrant/ansible/nginx_lb/roles/nginx-lb/tasks/main.yml
+
+---
+
+- name: Installing Keepalived
+  apt: 
+    name: keepalived
+    state: present
+
+- name: Ensure keepalived is running
+  service: 
+    name: keepalived
+    state: started 
+    enabled: yes
+
+- name: Deploy keepalived configuration file
+  template:
+    src: keepalived.j2
+    dest: /etc/keepalived/keepalived.conf
+
+- name: Deploy test_proxy.conf file on Lb cluster
+  template:
+    src: test_proxy.j2
+    dest: /etc/nginx/sites-enabled/test_proxy.conf
+  notify: reload nginx
+
+
+file: /home/vagrant/ansible/nginx_lb/roles/nginx-lb/templates/keepalived.j2
+
+vrrp_instance VI_1 {
+    interface                  enp0s8
+    {% if ansible_nodename == "nginx-01" -%}
+    priority                   101
+    {% endif -%}
+
+    {% if ansible_nodename == "nginx-02" -%}
+    priority                   50
+    {% endif -%}
+
+    virtual_router_id          51
+    advert_int                 1
+    accept
+    garp_master_refresh        5
+    garp_master_refresh_repeat 1
+    {% if ansible_nodename == "nginx-01" -%}
+    unicast_src_ip             192.168.33.21
+    {% endif -%}
+    
+    {% if ansible_nodename == "nginx-02" -%}
+    unicast_src_ip             192.168.33.22
+    {% endif %}
+
+    unicast_peer {
+    {% if ansible_nodename == "nginx-01" -%}
+    192.168.33.22
+    {% endif -%}
+    {% if ansible_nodename == "nginx-02" -%}
+    192.168.33.21
+    {% endif -%}
+    }
+
+    virtual_ipaddress {
+    192.168.33.5
+    }
+}
+
+file: /home/vagrant/ansible/nginx_lb/roles/nginx-lb/templates/test_proxy.j2
+
+upstream backend_test_web {
+  server 192.168.22.31;
+  server 192.168.22.32;
+  server 192.168.22.33;
+}
+
+server {
+   listen          8080;
+   location / {
+       proxy_pass http://backend_test_web;
+       proxy_set_header Host $host:$server_port;
+       proxy_set_header X-Real-IP  $remote_addr;
+       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+   }
+
+}
+
+file: /home/vagrant/ansible/nginx_lb/roles/webservers/tasks/main.yml
+
+---
+- name: Deploy index template
+  template:
+    src: index.j2
+    dest: /var/www/html/index.html
+
+file: /home/vagrant/ansible/nginx_lb/roles/webservers/templates/index.j2
+
+<html>
+    <h1> Hi Ak. Hello from {{ ansible_fqdn }} server. </h1>
+
+</html>

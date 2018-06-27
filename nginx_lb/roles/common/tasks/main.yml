@@ -1,5 +1,5 @@
 ---
-- name: Insall nginx
+- name: Insalling nginx
   apt:
     name: nginx
     state: present
@@ -10,3 +10,20 @@
     enabled: yes
     state: started
 
+- name: Installing sshpass
+  apt: 
+    name: sshpass
+    state: present
+
+- name: Installing Puppet and Ntp on Ubungu systems
+  apt: 
+    name: 
+    - puppet
+    - ntp
+    state: present 
+  when: ansible_os_family == "Debian"
+
+- name: Deploy Motd to all systems
+  template:
+    src: motd.j2
+    dest: /etc/motd
