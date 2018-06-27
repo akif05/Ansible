@@ -236,5 +236,3 @@ commmon_templates_motdj
 Linux {{ facter_lsbdistdescription }}
 Linux {{ facter_ipaddress_enp0s8 }}
 
-AAAAAAAAAAAAAAAAAAA
-BBBBBBBBBBBBBBBBBB
