@@ -7,18 +7,12 @@ upstream backend_test_web {
 server {
    listen          8080;
    location / {
-<<<<<<< HEAD
 
-=======
->>>>>>> 497012641e6dd86b8557cfaa190e6140c3a0c5bc
        proxy_pass http://backend_test_web;
        proxy_set_header Host $host:$server_port;
        proxy_set_header X-Real-IP  $remote_addr;
        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-<<<<<<< HEAD
 
-=======
->>>>>>> 497012641e6dd86b8557cfaa190e6140c3a0c5bc
    }
 
 }
