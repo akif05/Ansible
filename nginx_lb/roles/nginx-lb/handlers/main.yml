@@ -2,7 +2,6 @@
 - name: reload nginx
   service: 
     name: nginx
-<<<<<<< HEAD
     state: restarted
 
 - name: reload keepalived
@@ -10,6 +9,3 @@
   service:
     name: keepalived
     state: restarted 
-=======
-    status: started
->>>>>>> 497012641e6dd86b8557cfaa190e6140c3a0c5bc

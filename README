@@ -236,7 +236,4 @@ commmon_templates_motdj
 Linux {{ facter_lsbdistdescription }}
 Linux {{ facter_ipaddress_enp0s8 }}
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 497012641e6dd86b8557cfaa190e6140c3a0c5bc
