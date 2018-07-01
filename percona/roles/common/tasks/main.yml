@@ -4,6 +4,12 @@
     name: sshpass
     state: present
 
+- name: Installing locate search package
+  apt:
+    name:
+    - locate
+    state: present
+
 - name: Installing Puppet and Ntp on Ubungu systems
   apt: 
     name: 

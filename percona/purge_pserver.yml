@@ -1,0 +1,29 @@
+---
+
+- name: Purge puppet server 
+  hosts: puppet
+  
+  tasks:
+  - name: Stop puppetserver  
+    service: 
+      name: puppetserver
+      state: stopped
+ 
+  - name: Purge puppetserver
+    apt: 
+      name: puppetserver
+      state: absent
+
+  - name:
+    apt: 
+      name: puppet
+      state: absent
+
+  - name: Remove useless packagess from cache
+    apt:
+      autoclean: yes
+
+  - name: Remove dependencies that are no longer required
+    apt:
+      autoremove: yes 
+  

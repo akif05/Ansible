@@ -1,0 +1,36 @@
+---
+
+- name: Add puppet-agent repository
+  apt: deb="https://apt.puppetlabs.com/pool/xenial/puppet5/p/puppet-agent/puppet-agent_5.5.3-1xenial_amd64.deb"
+
+- name: Add puppetlabls repository
+  become: yes
+  become_user: root
+  apt: deb="https://apt.puppetlabs.com/pool/xenial/puppet5/p/puppetserver/puppetserver_5.3.3-1xenial_all.deb"
+  
+- name: Update apt after puppetlabs repository add
+  become: yes
+  become_user: root
+  apt: update_cache=yes
+
+- name: Install puppet-agent and  server
+  become: yes
+  become_user: root
+  action: apt pkg={{ item }} state=present
+  with_items:
+  - puppet-agent
+  - puppetserver 
+
+- name: Change JAVA_AGRS on puppet server from 2g to 512m. If neccary adjust! 
+  replace: 
+    path: /etc/default/puppetserver
+    regexp: '2g'
+    replace: '512m' 
+    backup: yes
+
+- name: Ensure puppet server is up
+  service:
+    name: puppetserver
+    state: reloaded
+    enabled: yes
+    

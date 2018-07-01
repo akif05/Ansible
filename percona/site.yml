@@ -9,3 +9,7 @@
   roles:
     - perconaservers
 
+- name: Deploy puppet server
+  hosts: puppet
+  roles:
+    - puppetserver
