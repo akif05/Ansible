@@ -18,7 +18,7 @@
   - puppet-agent
   - puppetserver 
 
-- name: Change JAVA_AGRS on puppet server from 2g to 512m. If neccary adjust! 
+- name: Change JAVA_AGRS on puppet server from 2g to 512m. If neccessary adjust! 
   replace: 
     path: /etc/default/puppetserver
     regexp: '2g'
@@ -30,4 +30,4 @@
     name: puppetserver
     state: reloaded
     enabled: yes
-    
+

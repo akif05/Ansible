@@ -10,10 +10,10 @@
   become_user: root
   apt: update_cache=yes
 
-- name: Install Percona MySQL Server
+- name: Unstall Percona MySQL Server
   become: yes
   become_user: root
-  action: apt pkg={{ item }} state=present
+  action: apt pkg={{ item }} state=absent
   with_items:
     - percona-server-server-5.7
     - percona-server-client-5.7
