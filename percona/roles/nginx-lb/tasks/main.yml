@@ -1,0 +1,25 @@
+---
+
+- name: Installing Keepalived
+  apt: 
+    name: keepalived
+    state: present
+
+- name: Ensure keepalived is running
+  service: 
+    name: keepalived
+    state: started 
+    enabled: yes
+
+- name: Deploy keepalived configuration file and reload
+  template:
+    src: keepalived.j2
+    dest: /etc/keepalived/keepalived.conf
+  notify: reload keepalived
+
+- name: Deploy test_proxy.conf file on Lb cluster
+  template:
+    src: test_proxy.j2
+    dest: /etc/nginx/sites-enabled/test_proxy.conf
+  notify: reload nginx
+

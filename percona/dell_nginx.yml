@@ -1,0 +1,16 @@
+---
+
+- name: Deploy nginx on all nodes
+  hosts: all
+  
+  tasks:
+  - name: Stop nginx  
+    service: 
+      name: nginx
+      state: stopped
+ 
+  - name: Unistall nginx 
+    apt: 
+      name: nginx
+      state: absent
+ 

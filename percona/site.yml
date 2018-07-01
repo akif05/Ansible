@@ -1,0 +1,11 @@
+---
+- name: Deploy nginx on all nodes
+  hosts: all
+  roles:
+    - common
+
+- name: Deploy percona servers
+  hosts: perconaservers
+  roles:
+    - perconaservers
+
